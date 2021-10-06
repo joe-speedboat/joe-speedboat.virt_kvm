@@ -1,0 +1,86 @@
+---
+# defaults file for joe-speedboat.virt_kvm
+
+virt_kvm_storage_pools:
+- name: ISO
+  dir: /srv/iso
+- name: IMG
+  dir: /srv/img
+- name: TEMPLATE
+  dir: /srv/template
+
+# convert default nic into bridge with static ip
+nic_to_bridge: true
+nic_to_bridge_ifname: BRIDGE
+
+virt_kvm_networks:
+- name: LAN
+  bridge_name: virbr1
+  forward_mode: none
+  stp: on
+  delay: 0
+  domain: local
+- name: ISOLATE
+  bridge_name: virbr2
+  forward_mode: none
+  stp: on
+  delay: 0
+  domain: local
+
+virt_tools_dir: /usr/local/sbin
+virt_kvm_tools:
+    - name: vla
+      url: https://raw.githubusercontent.com/joe-speedboat/shell.scripts/master/virsh-list-all.sh
+    - name: vmh
+      url: https://raw.githubusercontent.com/joe-speedboat/shell.scripts/master/virsh-qcow-backup.sh
+    - name: virsh-config-backup.sh
+      url: https://raw.githubusercontent.com/joe-speedboat/shell.scripts/master/virsh-config-backup.sh
+
+
+install_sense_vm: false
+sense_vms:
+- name: gate
+  url: https://mirror-opnsense.serverbase.ch/releases/mirror/OPNsense-21.7.1-OpenSSL-nano-amd64.img.bz2 # .img.bz2
+  disk_dir: /srv/img
+  disk_size: 10G
+  vm_bridge: BRIDGE
+  vm_bridge_mac: '02:ed:a5:66:04:13'
+  vm_net: LAN
+  mem: 1024
+  cpu: 2
+
+
+install_cos_vms: true
+cos_vms:
+- name: control
+  url: https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.4.2105-20210603.0.x86_64.qcow2
+  disk_dir: /srv/img
+  disk_size: 50G
+  vm_net: LAN
+  vm_mac: '02:91:45:b5:e5:b4'
+  mem: 2048
+  cpu: 2
+  extra_cmds: 
+  - dnf -y install git tmux vim wget rsync epel-release lvm2 container-selinux firewalld
+  - dnf -y install firefox
+  #- dnf -y group install "Xfce" "base-x" 
+  #- curl -L https://www.cendio.com/downloads/server/download.py --output /root/tl-server.zip
+  rootpw: redhat...
+
+## reboot system if needed
+virt_kvm_reboot_enabled: true
+virt_kvm_reboot_msg: "Rebootin system to apply changes"
+virt_kvm_reboot_timeout: 900
+
+# KSM is a memory-saving de-duplication feature
+virt_kvm_conf_nested_enabled: true
+
+virt_kvm_conf_ksm:
+  MONITOR_INTERVAL: 60
+  SLEEP_MSEC: 20
+  NPAGES_BOOST: 500
+  NPAGES_DECAY: -50
+  NPAGES_MIN: 64
+  NPAGES_MAX: 1250
+  THRES_COEF: 20
+  THRES_CONST: 2048

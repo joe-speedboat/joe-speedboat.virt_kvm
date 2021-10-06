@@ -1,0 +1,33 @@
+---
+# vars file for joe-speedboat.virt_kvm
+
+virt_kvm_packages:
+  - qemu-kvm
+  - libvirt
+  - virt-manager
+  - xorg-x11-xauth
+  - dejavu-*fonts
+  - mailx
+  - qemu-kvm-common
+  - python3-libvirt
+  - python3-lxml
+  - virt-install 
+  - libguestfs-tools
+  - bash-completion
+  - wget
+  - NetworkManager-libnm
+  - nm-connection-editor
+  - libsemanage-python3
+  - policycoreutils-python3
+  - unzip
+  
+centos_cloud_img_cleanup_cmds:
+- sed -i 's/^PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+- dnf -y remove cloud-init* cockpit*
+- rm -rf /etc/cloud
+- curl https://raw.githubusercontent.com/joe-speedboat/shell.scripts/master/grow_cloud_rootfs_xfs.sh > /usr/local/sbin/grow_cloud_rootfs_xfs.sh
+- chmod 700 /usr/local/sbin/grow_cloud_rootfs_xfs.sh
+- echo '@reboot root /usr/local/sbin/grow_cloud_rootfs_xfs.sh' > /etc/cron.d/1growfs
+
+control_node_packages: 
+  - python3-netaddr

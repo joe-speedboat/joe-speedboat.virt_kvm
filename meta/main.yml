@@ -1,0 +1,26 @@
+---
+# meta file for joe-speedboat.virt_kvm
+galaxy_info:
+  role_name: virt_kvm
+  author: joe-speedboat
+  description: An Ansible Role to install and configure a kvm host.
+  license: GPLv3
+
+  min_ansible_version: 2.9
+
+  platforms:
+    - name: EL
+      versions:
+        - 8
+
+    - name: Fedora
+      versions:
+        - 29
+        - 30
+
+  galaxy_tags:
+    - kvm
+    - libvirt
+    - virtualization
+
+dependencies: []

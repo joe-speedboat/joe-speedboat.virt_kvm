@@ -1,0 +1,144 @@
+---
+# tasks file for joe-speedboat.virt_kvm
+
+- name: Manage kvm Packages
+  dnf:
+    name: "{{ virt_kvm_package }}"
+  become: true
+  notify:
+  - Restart kvm service
+  - Restart ksm service
+
+- name: Manage Service
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  become: true
+  with_items:
+  - libvirtd
+  - ksm
+  - ksmtuned
+
+- name: Configure ksmtuned.conf
+  template:
+    src: "ksmtuned.conf.j2"
+    dest: "/etc/ksmtuned.conf"
+    owner: "root"
+    group: "root"
+    mode: 0644
+  become: true
+  notify:
+  - Restart ksm service
+
+- name: Check support for intel nesting
+  command: cat /sys/module/kvm_intel/parameters/nested
+  ignore_errors: true
+  changed_when: false
+  register: intel_nested
+
+- debug:
+    var: intel_nested
+
+- name: Check support for amd nesting
+  command: cat /sys/module/kvm_amd/parameters/nested
+  ignore_errors: true
+  changed_when: false
+  register: amd_nested
+
+- debug:
+    var: amd_nested
+
+- name: Configure kvm_intel Module
+  template:
+    src: modprobe.d.kvm_intel.conf.j2
+    dest: /etc/modprobe.d/kvm_intel.conf
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+  when:
+    - intel_nested.stdout == "0" or
+      intel_nested.stdout == "Y"
+  notify:
+  - Reboot System
+
+- name: Configure kvm_amd Module
+  template:
+    src: modprobe.d.kvm_amd.conf.j2
+    dest: /etc/modprobe.d/kvm_amd.conf
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+  when:
+    - amd_nested.stdout == "0" or
+      amd_nested.stdout == "Y"
+  notify:
+  - Reboot System
+
+- name: Create pool directories if they does not exist
+  file:
+    path: "{{ item.dir }}"
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  with_items: "{{ virt_kvm_storage_pools }}"
+
+- name: Create pools
+  shell: |
+    virsh pool-define-as "{{ item.name }}" dir - - - - "{{ item.dir }}"
+    virsh pool-build "{{ item.name }}"
+    virsh pool-start "{{ item.name }}"
+    virsh pool-autostart "{{ item.name }}"
+  with_items: "{{ virt_kvm_storage_pools }}"
+
+- name: define virsh virtual networks
+  virt_net:
+    command: define
+    name: "{{ item['name'] }}"
+    xml: "{{ lookup('template', 'network.xml.j2') }}"
+  with_items: "{{ virt_kvm_networks }}"
+  ignore_errors: true
+
+- name: configure virsh virtual networks
+  virt_net:
+    command: modify
+    name: "{{ item['name'] }}"
+    autostart: yes
+    state: active
+  with_items: "{{ virt_kvm_networks }}"
+  ignore_errors: true
+
+
+- name: convert default nic into bridge
+  block:
+  - name: set config mode to auto - issue 36615
+    shell: nmcli c mod '{{ nic_to_bridge_ifname }}' ipv4.method "auto"
+
+  - name: remove default nic
+    shell: rm -f /etc/sysconfig/network-scripts/ifcfg-'{{ ansible_default_ipv4.interface }}'
+    ignore_errors: True
+
+  - name: configure a static ip address
+    nmcli:
+      type: bridge
+      conn_name: '{{ nic_to_bridge_ifname }}'
+      ifname: '{{ nic_to_bridge_ifname }}'
+      ip4: "{{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ipsubnet }}"
+      gw4: '{{ ansible_default_ipv4.gateway }}'
+      dns4: '{{ ansible_dns.nameservers[0] }}'
+      dns4_search: '{{ ansible_dns.search[0] }}'
+      state: present
+      autoconnect: True
+    ignore_errors: True
+
+  - name: set config mode to manual - issue 36615
+    shell: nmcli c mod '{{ nic_to_bridge_ifname }}' ipv4.method "static"
+
+  - name: restart network
+    service:
+      name: 'network'
+      state: restarted
+  when: nic_to_bridge

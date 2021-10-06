@@ -1,0 +1,45 @@
+2021-03-27 10:00:28,066 p=15893 u=root n=ansible | [WARNING]: Unable to parse /etc/ansible/inventory ./inventory as an inventory source
+
+2021-03-27 10:00:28,068 p=15893 u=root n=ansible | [WARNING]: No inventory was parsed, only implicit localhost is available
+
+2021-03-27 10:00:28,069 p=15893 u=root n=ansible | [WARNING]: provided hosts list is empty, only localhost is available. Note that the implicit localhost does not match 'all'
+
+2021-03-27 10:00:28,515 p=15893 u=root n=ansible | ERROR! the role 'joe-speedboat.virt_kvm' was not found in /etc/ansible/roles/joe-speedboat.virt_kvm/tests/roles:/etc/ansible/roles, ./roles:/etc/ansible/roles/joe-speedboat.virt_kvm/tests
+
+The error appears to be in '/etc/ansible/roles/joe-speedboat.virt_kvm/tests/test.yml': line 5, column 5, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+  roles:
+  - joe-speedboat.virt_kvm
+    ^ here
+
+2021-03-27 10:01:20,297 p=15999 u=root n=ansible | [WARNING]: Unable to parse /etc/ansible/inventory ./inventory as an inventory source
+
+2021-03-27 10:01:20,299 p=15999 u=root n=ansible | [WARNING]: No inventory was parsed, only implicit localhost is available
+
+2021-03-27 10:01:20,300 p=15999 u=root n=ansible | [WARNING]: provided hosts list is empty, only localhost is available. Note that the implicit localhost does not match 'all'
+
+2021-03-27 10:01:20,755 p=15999 u=root n=ansible | ERROR! the role 'joe-speedboat.virt_kvm' was not found in /etc/ansible/roles/joe-speedboat.virt_kvm/tests/roles:/etc/ansible/roles, ./roles:/etc/ansible/roles/joe-speedboat.virt_kvm/tests
+
+The error appears to be in '/etc/ansible/roles/joe-speedboat.virt_kvm/tests/test.yml': line 5, column 5, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+  roles:
+  - joe-speedboat.virt_kvm
+    ^ here
+
+2021-03-27 10:02:22,312 p=16104 u=root n=ansible | ERROR! the role 'joe-speedboat.virt_kvm' was not found in /etc/ansible/roles/joe-speedboat.virt_kvm/tests/roles:/etc/ansible/roles,./roles:/etc/ansible/roles/joe-speedboat.virt_kvm/tests
+
+The error appears to be in '/etc/ansible/roles/joe-speedboat.virt_kvm/tests/test.yml': line 5, column 5, but may
+be elsewhere in the file depending on the exact syntax problem.
+
+The offending line appears to be:
+
+  roles:
+  - joe-speedboat.virt_kvm
+    ^ here
+

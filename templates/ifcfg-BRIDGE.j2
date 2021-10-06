@@ -1,0 +1,16 @@
+DEVICE={{ nic_to_bridge_ifname }}
+STP=no
+TYPE=Bridge
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none
+IPADDR={{ ansible_default_ipv4.address }}
+PREFIX={{ ((ansible_default_ipv4.address + '/' + ansible_default_ipv4.netmask) | ipaddr('network/prefix')).split( '/' )[-1] }}
+GATEWAY={{ ansible_default_ipv4.gateway }}
+DNS1={{ ansible_dns.nameservers[0]|default('8.8.4.4') }}
+DNS2={{ ansible_dns.nameservers[1]|default('8.8.8.8') }}
+IPV6INIT=no
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=yes
+NAME={{ nic_to_bridge_ifname }}
+ONBOOT=yes

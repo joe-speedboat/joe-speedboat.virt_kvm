@@ -1,0 +1,54 @@
+# {{ ansible_managed | comment }}
+
+{% if virt_kvm_conf_ksm.MONITOR_INTERVAL is defined %}
+KSM_MONITOR_INTERVAL={{ virt_kvm_conf_ksm.MONITOR_INTERVAL }}
+{% else %}
+# KSM_MONITOR_INTERVAL=60
+{% endif %}
+
+{% if virt_kvm_conf_ksm.SLEEP_MSEC is defined %}
+KSM_SLEEP_MSEC={{ virt_kvm_conf_ksm.SLEEP_MSEC }}
+{% else %}
+# KSM_SLEEP_MSEC=10
+{% endif %}
+
+{% if virt_kvm_conf_ksm.NPAGES_BOOST is defined %}
+KSM_NPAGES_BOOST={{ virt_kvm_conf_ksm.NPAGES_BOOST }}
+{% else %}
+# KSM_NPAGES_BOOST=300
+{% endif %}
+
+{% if virt_kvm_conf_ksm.NPAGES_DECAY is defined %}
+KSM_NPAGES_DECAY={{ virt_kvm_conf_ksm.NPAGES_DECAY }}
+{% else %}
+# KSM_NPAGES_DECAY=-50
+{% endif %}
+
+{% if virt_kvm_conf_ksm.NPAGES_MIN is defined %}
+KSM_NPAGES_MIN={{ virt_kvm_conf_ksm.NPAGES_MIN }}
+{% else %}
+# KSM_NPAGES_MIN=64
+{% endif %}
+
+{% if virt_kvm_conf_ksm.NPAGES_MAX is defined %}
+KSM_NPAGES_MAX={{ virt_kvm_conf_ksm.NPAGES_MAX }}
+{% else %}
+# KSM_NPAGES_MAX=1250
+{% endif %}
+
+{% if virt_kvm_conf_ksm.THRES_COEF is defined %}
+KSM_THRES_COEF={{ virt_kvm_conf_ksm.THRES_COEF }}
+{% else %}
+# KSM_THRES_COEF=20
+{% endif %}
+
+{% if virt_kvm_conf_ksm.THRES_CONST is defined %}
+KSM_THRES_CONST={{ virt_kvm_conf_ksm.THRES_CONST }}
+{% else %}
+# KSM_THRES_CONST=2048
+{% endif %}
+
+# uncomment the following if you want ksmtuned debug info
+
+# LOGFILE=/var/log/ksmtuned
+# DEBUG=1

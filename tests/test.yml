@@ -1,0 +1,5 @@
+# joe-speedboat.virt_kvm/tests/test.yml
+- name: test joe-speedboat.virt_kvm role
+  hosts: kvm1
+  roles:
+  - joe-speedboat.virt_kvm

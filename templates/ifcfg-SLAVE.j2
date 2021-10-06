@@ -1,0 +1,5 @@
+DEVICE={{ ansible_default_ipv4.interface }}
+ONBOOT=yes
+TYPE=Ethernet
+NAME={{ ansible_default_ipv4.interface }}
+BRIDGE={{ nic_to_bridge_ifname }}

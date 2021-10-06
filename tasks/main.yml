@@ -1,0 +1,246 @@
+---
+# tasks file for joe-speedboat.virt_kvm
+- name: install deps for ansible control node
+  dnf:
+    name: "{{ control_node_packages }}"
+
+- name: Manage kvm Packages
+  dnf:
+    name: "{{ virt_kvm_packages }}"
+  become: true
+  notify:
+  - Restart kvm service
+  - Restart ksm service
+
+- name: Manage Service
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  become: true
+  with_items:
+  - libvirtd
+  - ksm
+  - ksmtuned
+
+- name: Configure ksmtuned.conf
+  template:
+    src: "ksmtuned.conf.j2"
+    dest: "/etc/ksmtuned.conf"
+    owner: "root"
+    group: "root"
+    mode: 0644
+  become: true
+  notify:
+  - Restart ksm service
+
+- name: configure nesteing
+  block:
+  - name: Check support for intel nesting
+    command: cat /sys/module/kvm_intel/parameters/nested
+    ignore_errors: true
+    changed_when: false
+    register: intel_nested
+
+  - name: Check support for amd nesting
+    command: cat /sys/module/kvm_amd/parameters/nested
+    ignore_errors: true
+    changed_when: false
+    register: amd_nested
+
+  - name: Configure kvm_intel Module
+    template:
+      src: modprobe.d.kvm_intel.conf.j2
+      dest: /etc/modprobe.d/kvm_intel.conf
+      owner: root
+      group: root
+      mode: 0644
+    become: true
+    when:
+      - intel_nested.stdout == "0" or
+        intel_nested.stdout == "Y"
+    notify:
+    - Reboot System
+
+  - name: Configure kvm_amd Module
+    template:
+      src: modprobe.d.kvm_amd.conf.j2
+      dest: /etc/modprobe.d/kvm_amd.conf
+      owner: root
+      group: root
+      mode: 0644
+    become: true
+    when:
+      - amd_nested.stdout == "0" or
+        amd_nested.stdout == "Y"
+    notify:
+    - Reboot System
+  when: virt_kvm_conf_nested_enabled
+
+- name: Create pool directories if they does not exist
+  file:
+    path: "{{ item.dir }}"
+    state: directory
+    mode: '0770'
+    owner: root
+    group: qemu
+  with_items: "{{ virt_kvm_storage_pools }}"
+
+- name: Create vm storage pools
+  virt_pool:
+    command: define
+    name: "{{ item.name }}"
+    xml: '{{ lookup("template", "pool.xml.j2") }}'
+  with_items: "{{ virt_kvm_storage_pools }}"
+
+- name: Activate vm storage pools 
+  virt_pool:
+    state: active
+    name: "{{ item.name }}"
+  with_items: "{{ virt_kvm_storage_pools }}"
+
+- name: Autostart vm storage pools 
+  virt_pool:
+    autostart: yes
+    name: "{{ item.name }}"
+  with_items: "{{ virt_kvm_storage_pools }}"
+
+- name: configure qemu brdiging                                                       
+  lineinfile:                                                                       
+    path: /etc/qemu-kvm/bridge.conf                                                        
+    line: "allow {{ item.bridge_name }}"                                                              
+  loop:                                                                           
+  with_items: "{{ virt_kvm_networks }}"
+  notify:
+  - Restart kvm service
+
+- name: define vm networks
+  virt_net:
+    command: define
+    name: "{{ item['name'] }}"
+    xml: "{{ lookup('template', 'network.xml.j2') }}"
+  with_items: "{{ virt_kvm_networks }}"
+  ignore_errors: true
+
+- name: Activate virsh virtual networks
+  virt_net:
+    name: "{{ item.name }}"
+    state: active
+  with_items: "{{ virt_kvm_networks }}"
+  ignore_errors: true
+
+- name: Autostart virsh virtual networks
+  virt_net:
+    name: "{{ item.name }}"
+    autostart: yes
+  with_items: "{{ virt_kvm_networks }}"
+  ignore_errors: true
+
+- name: convert default nic into bridge
+  block:
+  - name: Configure Network Bridge Config
+    template:
+      src: ifcfg-BRIDGE.j2
+      dest: /etc/sysconfig/network-scripts/ifcfg-{{ nic_to_bridge_ifname }}
+      owner: root
+      group: root
+      mode: 0644
+    notify:
+     - Reboot System
+  - name: Configure Network Slave Config
+    template:
+      src: ifcfg-SLAVE.j2
+      dest: /etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.interface }}
+      owner: root
+      group: root
+      mode: 0644
+    notify:
+     - Reboot System
+  when: nic_to_bridge and  ansible_default_ipv4.interface != nic_to_bridge_ifname
+
+- name: Download virt helpers
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ virt_tools_dir }}/{{ item.name }}"
+    mode: 0700
+    owner: root
+    group: root
+  with_items: "{{ virt_kvm_tools }}"
+
+- name: configure vmh with default config
+  copy:
+    content: |
+      BACKUP_DIR=/srv/backup
+      DEBUG=0
+      DOWARN=1
+      MAIL_ERR=1
+      TO=root
+    dest: /etc/virsh-qcow-backup.cfg
+    mode: 0600
+    owner: root
+    group: root
+
+- name: Create VM backup directory
+  file:
+    path: /srv/backup
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+
+- name: create OPNsense vm with ugly shell scripts
+  shell: |
+    wget "{{ item.url }}" -q -O "{{ item.disk_dir }}/{{ item.name }}.img.bz2"
+
+    bunzip2 "{{ item.disk_dir }}/{{ item.name }}.img.bz2"
+
+    qemu-img convert -f raw -c -O qcow2 "{{ item.disk_dir }}/{{ item.name }}.img" "{{ item.disk_dir }}/{{ item.name }}.qcow2"
+
+    rm -fv "{{ item.disk_dir }}/{{ item.name }}.img"
+
+    qemu-img resize "{{ item.disk_dir }}/{{ item.name }}.qcow2" "{{ item.disk_size }}"
+
+    virt-install -n "{{ item.name }}" \
+      --description "{{ item.name }} Firewall" \
+      --os-type=Linux \
+      --os-variant=freebsd7.0 \
+      --ram="{{ item.mem }}" \
+      --vcpus="{{ item.cpu }}" \
+      --disk path={{ item.disk_dir }}/{{ item.name }}.qcow2,bus=virtio \
+      --graphics vnc \
+      --import \
+      --network=bridge:{{ item.vm_bridge }},model=virtio,mac={{ item.vm_bridge_mac }} \
+      --network network={{ item.vm_net }},model=virtio \
+      --boot useserial=on \
+      --rng /dev/random \
+      --noreboot || true
+  with_items: "{{ sense_vms }}"
+  when: install_sense_vm
+
+- name: create centos vm with ugly shell scripts
+  shell: |
+    wget "{{ item.url }}" -q -O "{{ item.disk_dir }}/{{ item.name }}.qcow2"
+
+    qemu-img resize "{{ item.disk_dir }}/{{ item.name }}.qcow2" "{{ item.disk_size }}"
+
+    virt-customize -m "{{ item.mem }}" \
+      -a "{{ item.disk_dir }}/{{ item.name }}.qcow2" \
+      --root-password password:"{{ item.rootpw }}"  \
+      --selinux-relabel \
+      --run-command "{{ ( item.extra_cmds + centos_cloud_img_cleanup_cmds ) |join(';') }}" || true
+
+    virt-install -n "{{ item.name }}" \
+      --description "{{ item.name }} VM" \
+      --os-type=Linux \
+      --os-variant=rhel7.0 \
+      --ram="{{ item.mem }}" \
+      --vcpus="{{ item.cpu }}" \
+      --disk path={{ item.disk_dir }}/{{ item.name }}.qcow2,bus=virtio \
+      --graphics vnc \
+      --import \
+      --network network={{ item.vm_net }},model=virtio,mac={{ item.vm_mac }} \
+      --boot useserial=on \
+      --rng /dev/random \
+      --noreboot || true
+  with_items: "{{ cos_vms }}"
+  when: install_cos_vms

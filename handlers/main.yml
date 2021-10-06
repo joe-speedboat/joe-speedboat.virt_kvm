@@ -1,0 +1,27 @@
+---
+# handlers file for joe-speedboat.virt_kvm
+
+- name: Restart kvm service
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  become: true
+  with_items:
+  - libvirtd
+
+- name: Restart ksm service
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  become: true
+  with_items:
+  - ksm
+  - ksmtuned
+
+- name: Reboot System
+  reboot:
+    msg: "{{ virt_kvm_reboot_msg }}"
+    reboot_timeout: "{{ virt_kvm_reboot_timeout }}"
+  become: true
+  when:
+    - virt_kvm_reboot_enabled
