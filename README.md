@@ -16,6 +16,9 @@ This role configures a KVM hypervisor:
 -   install libvirt
 -   install [ksm](https://www.linux-kvm.org/page/KSM) support and service
 -   install [kvm nesting](https://www.linux-kvm.org/page/Nested_Guests) support
+-   install some kvm/virsh tools: https://github.com/joe-speedboat/shell.scripts
+-   install OPNsense Firewall
+-   install CentOS VM from Cloud Image
 
 ## Installation
 
