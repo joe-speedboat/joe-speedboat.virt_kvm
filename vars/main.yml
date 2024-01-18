@@ -7,7 +7,7 @@ virt_kvm_packages:
   - virt-manager
   - xorg-x11-xauth
   - dejavu-*fonts
-  - mailx
+  - s-nail
   - qemu-kvm-common
   - python3-libvirt
   - python3-lxml
@@ -20,6 +20,7 @@ virt_kvm_packages:
   - libsemanage-python3
   - policycoreutils-python3
   - unzip
+  - ksmtuned
   
 centos_cloud_img_cleanup_cmds:
 - sed -i 's/^PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config

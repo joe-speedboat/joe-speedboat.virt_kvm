@@ -3,25 +3,33 @@
 
 virt_kvm_storage_pools:
 - name: ISO
-  dir: /srv/iso
-- name: IMG
-  dir: /srv/img
+  dir: /srv/kvm/iso
+- name: NVME-DEDUP
+  dir: /srv/kvm/nvme-vdo
 - name: TEMPLATE
-  dir: /srv/template
+  dir: /srv/kvm/template
+- name: RAID
+  dir: /srv/kvm/raid
 
 # convert default nic into bridge with static ip
 nic_to_bridge: true
 nic_to_bridge_ifname: BRIDGE
 
 virt_kvm_networks:
-- name: LAN
+- name: ADMIN
   bridge_name: virbr1
   forward_mode: none
   stp: on
   delay: 0
   domain: local
-- name: ISOLATE
+- name: PROD
   bridge_name: virbr2
+  forward_mode: none
+  stp: on
+  delay: 0
+  domain: local
+- name: OKD
+  bridge_name: virbr3
   forward_mode: none
   stp: on
   delay: 0
@@ -30,11 +38,11 @@ virt_kvm_networks:
 virt_tools_dir: /usr/local/sbin
 virt_kvm_tools:
     - name: vla
-      url: https://raw.githubusercontent.com/joe-speedboat/shell.scripts/master/virsh-list-all.sh
+      url: https://raw.githubusercontent.com/joe-speedboat/linux.scripts/master/kvm/virsh-list-all.sh
     - name: vmh
-      url: https://raw.githubusercontent.com/joe-speedboat/shell.scripts/master/virsh-qcow-backup.sh
+      url: https://raw.githubusercontent.com/joe-speedboat/linux.scripts/master/kvm/virsh-qcow-backup.sh
     - name: virsh-config-backup.sh
-      url: https://raw.githubusercontent.com/joe-speedboat/shell.scripts/master/virsh-config-backup.sh
+      url: https://raw.githubusercontent.com/joe-speedboat/linux.scripts/master/kvm/virsh-config-backup.sh
 
 
 install_sense_vm: false
@@ -50,7 +58,7 @@ sense_vms:
   cpu: 2
 
 
-install_cos_vms: true
+install_cos_vms: false
 cos_vms:
 - name: control
   url: https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.4.2105-20210603.0.x86_64.qcow2
