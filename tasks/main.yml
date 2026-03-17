@@ -158,6 +158,8 @@
      - Reboot System
   when: nic_to_bridge and  ansible_default_ipv4.interface != nic_to_bridge_ifname
 
+- meta: flush_handlers  # ensure bridge configuration and reboot are applied before VM creation
+
 - name: Download virt helpers
   get_url:
     url: "{{ item.url }}"
@@ -217,30 +219,61 @@
   with_items: "{{ sense_vms }}"
   when: install_sense_vm
 
-- name: create centos vm with ugly shell scripts
+
+- name: Find remastered Rocky ISO file on localhost
+  ansible.builtin.find:
+    paths: /srv/iso.remaster/rocky9/
+    patterns: 'remastered-custom_rocky9*.iso'
+  register: found_iso
+  delegate_to: localhost
+
+- name: Fail if no ISO found on localhost
+  ansible.builtin.fail:
+    msg: "No ISO file found in /srv/iso.remaster/rocky9/"
+  when: found_iso.matched == 0
+
+- name: Check if remastered ISO exists on remote host
+  ansible.builtin.stat:
+   path: "{{ vm_item.iso_disk_dir }}/{{ vm_item.name }}.iso"
+  register: found_iso_remote
+  loop: "{{ rocky_vms }}"
+  loop_control:
+    loop_var: vm_item
+    index_var: iso_idx
+
+- name: Copy remastered ISO to VM directory
+  ansible.builtin.copy:
+    src: "{{ iso_file.path }}"
+    dest: "{{ vm_item.iso_disk_dir }}/{{ vm_item.name }}.iso"
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ rocky_vms }}"
+  loop_control:
+    loop_var: vm_item
+    index_var: iso_idx
+  vars:
+    iso_file: "{{ found_iso.files[0] }}"
+  when:
+    - install_rocky_vms
+    - found_iso.matched > 0
+    - not found_iso_remote.results[iso_idx].stat.exists
+
+- name: create rocky vm using ISO installer
   shell: |
-    wget "{{ item.url }}" -q -O "{{ item.disk_dir }}/{{ item.name }}.qcow2"
-
-    qemu-img resize "{{ item.disk_dir }}/{{ item.name }}.qcow2" "{{ item.disk_size }}"
-
-    virt-customize -m "{{ item.mem }}" \
-      -a "{{ item.disk_dir }}/{{ item.name }}.qcow2" \
-      --root-password password:"{{ item.rootpw }}"  \
-      --selinux-relabel \
-      --run-command "{{ ( item.extra_cmds + centos_cloud_img_cleanup_cmds ) |join(';') }}" || true
+    qemu-img create -f qcow2 "{{ item.disk_dir }}/{{ item.name }}.qcow2" "{{ item.disk_size }}"
 
     virt-install -n "{{ item.name }}" \
       --description "{{ item.name }} VM" \
-      --os-type=Linux \
-      --os-variant=rhel7.0 \
+      --osinfo=rocky9 \
       --ram="{{ item.mem }}" \
       --vcpus="{{ item.cpu }}" \
       --disk path={{ item.disk_dir }}/{{ item.name }}.qcow2,bus=virtio \
+      --disk path={{ item.iso_disk_dir }}/{{ item.name }}.iso,device=cdrom \
       --graphics vnc \
-      --import \
       --network network={{ item.vm_net }},model=virtio,mac={{ item.vm_mac }} \
-      --boot useserial=on \
+      --boot cdrom,loader=/usr/share/edk2/ovmf/OVMF_CODE.fd,loader.readonly=yes,loader.type=pflash,nvram=/var/lib/libvirt/qemu/nvram/{{ item.name }}_VARS.fd,hd \
       --rng /dev/random \
       --noreboot || true
-  with_items: "{{ cos_vms }}"
-  when: install_cos_vms
+  with_items: "{{ rocky_vms }}"
+  when: install_rocky_vms

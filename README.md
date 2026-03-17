@@ -2,6 +2,8 @@
 
 An Ansible Role to install and configure a kvm host on hetzner machine.
 
+Tested with Ansible 2.18.5
+
 ## Motivation
 
 [KVM](https://www.linux-kvm.org/page/Main_Page) in combination with
@@ -30,6 +32,23 @@ ansible-galaxy install joe-speedboat.virt_kvm
 Install from [Github](https://github.com/joe-speedboat/joe-speedboat.virt_kvm)
 ```
 git clone https://github.com/joe-speedboat/joe-speedboat.virt_kvm.git joe-speedboat.virt_kvm
+```
+
+## Dependencies
+
+Install ansible collection requirements
+```
+ansible-galaxy collection install -r requirements.yml
+```
+
+Install python module on ansible node
+```
+sudo dnf install -y python3-netaddr
+```
+
+Ensure that the user you want to use is in the libvirt group on the target server
+```
+sudo usermod -aG libvirt $USER
 ```
 
 ## Usage

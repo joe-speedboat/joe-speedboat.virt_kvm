@@ -1,5 +1,10 @@
 # joe-speedboat.virt_kvm/tests/test.yml
 - name: test joe-speedboat.virt_kvm role
-  hosts: kvm1
+  hosts: kvm
   roles:
   - joe-speedboat.virt_kvm
+  vars: 
+    vm_bridge_mac: '00:50:56:00:df:a1'
+    install_sense_vm: false
+    install_rocky_vms: true
+

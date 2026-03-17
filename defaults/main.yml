@@ -48,32 +48,33 @@ virt_kvm_tools:
 install_sense_vm: false
 sense_vms:
 - name: gate
-  url: https://mirror-opnsense.serverbase.ch/releases/mirror/OPNsense-21.7.1-OpenSSL-nano-amd64.img.bz2 # .img.bz2
-  disk_dir: /srv/img
+  url: https://mirror-opnsense.serverbase.ch/releases/mirror/OPNsense-25.1-nano-amd64.img.bz2 # .img.bz2
+  disk_dir: /srv/kvm/nvme-vdo
   disk_size: 10G
   vm_bridge: BRIDGE
-  vm_bridge_mac: '02:ed:a5:66:04:13'
-  vm_net: LAN
+  vm_bridge_mac: '00:50:56:00:df:a1'
+  vm_net: ADMIN
   mem: 1024
   cpu: 2
 
 
-install_cos_vms: false
-cos_vms:
+install_rocky_vms: false
+rocky_vms:
 - name: control
-  url: https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.4.2105-20210603.0.x86_64.qcow2
-  disk_dir: /srv/img
+  url: https://dl.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9-latest-x86_64-minimal.iso
+  disk_dir: /srv/kvm/nvme-vdo
+  iso_disk_dir: /srv/kvm/iso
   disk_size: 50G
-  vm_net: LAN
+  vm_net: ADMIN
   vm_mac: '02:91:45:b5:e5:b4'
   mem: 2048
   cpu: 2
-  extra_cmds: 
-  - dnf -y install git tmux vim wget rsync epel-release lvm2 container-selinux firewalld
-  - dnf -y install firefox
+  #extra_cmds: 
+  #- dnf -y install git tmux vim wget rsync epel-release lvm2 container-selinux firewalld bash-completion
+  #- dnf -y install firefox
   #- dnf -y group install "Xfce" "base-x" 
-  #- curl -L https://www.cendio.com/downloads/server/download.py --output /root/tl-server.zip
-  rootpw: redhat...
+  #- curl -L https://www.cendio.com/downloads/server/tl-4.19.0-server.zip --output /root/tl-4.19.0-server.zip
+  #rootpw: redhat...
 
 ## reboot system if needed
 virt_kvm_reboot_enabled: true
